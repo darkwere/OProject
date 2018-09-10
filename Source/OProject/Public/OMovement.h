@@ -42,6 +42,9 @@ public:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	UFUNCTION(BlueprintCallable, Category = "Init")
+	void Init(USceneComponent* Collider, USceneComponent* SkeletalMesh);
+
 	void MoveForward(const float Value);
 	void MoveRight(const float Value);
 	void RotateDelta(const float DeltaRotation);
@@ -71,7 +74,7 @@ private:
 
 protected:
 
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly)
 	float PawnSpeed;
 
 	USceneComponent* Collider;

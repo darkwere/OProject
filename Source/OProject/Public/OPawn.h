@@ -15,10 +15,11 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	void HandleTouch(ETouchType::Type Type, const FVector2D& TouchLocation);
+
 protected:
     
 	virtual void BeginPlay() override;
-
 
 	void MoveForward(const float Value);
 	void MoveRight(const float Value);
@@ -36,6 +37,7 @@ protected:
 
 private:
 
+	FVector2D PrevTouchLocation;
 
 
 

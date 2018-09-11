@@ -5,8 +5,6 @@
 #include "OMovement.generated.h"
 
 
-
-
 USTRUCT()
 struct FOMove{
 	GENERATED_USTRUCT_BODY()
@@ -55,6 +53,10 @@ public:
 	void SetColliderLocation(const FVector& NewLocation);
 	void SetLookAt(const FRotator& NewLookAt);
 
+	FOMove 	GetLastMove() const;
+	FVector	GetLocation() const;
+	FRotator GetLookAt() const;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -69,7 +71,6 @@ private:
 	void LookAtRotation(const FOMove& Move);
 	void AdjustMeshUp();
 
-
 // FIELDS
 
 protected:
@@ -81,6 +82,6 @@ protected:
 	USceneComponent* SkeletalMesh;
 
 	FVector2D MoveInput;
-	float DeltaRotaion;
+	float DeltaRotation;
 	FOMove	LastMove;
 };

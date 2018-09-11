@@ -3,6 +3,7 @@
 
 UOMovement::UOMovement(){	
 	PrimaryComponentTick.bCanEverTick = true;
+	PawnSpeed = 0.25f;
 }
 
 void UOMovement::BeginPlay(){
@@ -38,7 +39,7 @@ void UOMovement::MoveRight(const float Value){
 }
 	
 void UOMovement::RotateDelta(const float DeltaRotation){
-
+	this->DeltaRotation = DeltaRotation;
 }
 	
 void UOMovement::SimulateMove(const FOMove& Move){
@@ -67,6 +68,24 @@ void UOMovement::SetLookAt(const FRotator& NewLookAt){
 	}
 }
 
+FOMove UOMovement::GetLastMove() const {
+	return(LastMove);
+}
+
+FVector	UOMovement::GetLocation() const {
+	if(SkeletalMesh){
+		return(SkeletalMesh->GetComponentLocation());
+	}
+	return(FVector::ZeroVector);
+}
+
+FRotator UOMovement::GetLookAt() const {
+	if(SkeletalMesh){
+		return(SkeletalMesh->GetRelativeTransform().Rotator());
+	}
+	return(FRotator::ZeroRotator);
+}
+
 // PRIVATE
 
 float UOMovement::AdjustMoveInput(const float Value) const{
@@ -81,7 +100,7 @@ FOMove UOMovement::CreateMove(const float DeltaTime) const{
 	FOMove NewMove;
 	NewMove.DeltaTime = DeltaTime;
 	NewMove.MoveInput = MoveInput;
-	NewMove.DeltaRotation = DeltaRotaion;
+	NewMove.DeltaRotation = DeltaRotation;
 	NewMove.Time = GetWorld()->TimeSeconds;
 	return(NewMove);
 }

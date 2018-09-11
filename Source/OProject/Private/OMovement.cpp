@@ -1,5 +1,23 @@
 #include "OMovement.h"
 
+#include "DrawDebugHelpers.h"
+
+// DEBUG PURPOSE
+FColor GetRoleColor(ENetRole Role){
+	switch(Role){
+		case ROLE_None:
+		return FColor::White;
+		case ROLE_SimulatedProxy:
+		return FColor::Yellow;
+		case ROLE_AutonomousProxy:
+		return FColor::Cyan;
+		case ROLE_Authority:
+		return FColor::Green;
+		default: return FColor::Red;
+	}
+}
+
+
 
 UOMovement::UOMovement(){	
 	PrimaryComponentTick.bCanEverTick = true;
@@ -18,10 +36,12 @@ void UOMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompo
 		UE_LOG(LogTemp, Error, TEXT("[ERROR] UOMovement -> Root Collider or Skeletal Mesh didn't initilize"));
 		return;
 	}
+	LastMove = CreateMove(DeltaTime);
+	SimulateMove(LastMove);
 
-	FOMove NewMove = CreateMove(DeltaTime);
-
-	SimulateMove(NewMove);
+	// DEBUG PURPOSE
+	FColor RoleColor = GetRoleColor(GetOwnerRole());
+	DrawDebugSphere(GetWorld(), SkeletalMesh->GetComponentLocation() * 1.2, 5, 16, RoleColor);
 
 }
 

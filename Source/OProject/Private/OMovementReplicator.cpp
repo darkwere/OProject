@@ -29,7 +29,6 @@ void UOMovementReplicator::TickComponent(float DeltaTime, ELevelTick TickType, F
 	ENetRole OwnerRole = GetOwnerRole();
 	ENetRole RemoteRole = GetOwner()->GetRemoteRole();
 
-	// TODO:
 	if(OwnerRole == ROLE_AutonomousProxy){
 		FOMove CurrentMove = Movement->GetLastMove();
 		Server_Move(CurrentMove);
@@ -40,10 +39,11 @@ void UOMovementReplicator::TickComponent(float DeltaTime, ELevelTick TickType, F
 		UpdateServerState(CurrentMove);
 	}
 
+	// TODO: Replicate to Simulated proxy?
+
 }
 
 void UOMovementReplicator::Server_Move_Implementation(const FOMove& Move){
-	UE_LOG(LogTemp, Warning, TEXT("Server_Move_Implementation"));
 	if(Movement){
 		Movement->SimulateMove(Move);
 		UpdateServerState(Move);
@@ -57,9 +57,10 @@ bool UOMovementReplicator::Server_Move_Validate(const FOMove& Move){
 void UOMovementReplicator::OnRep_ServerState(){
 	if(Movement){
 		Movement->SetLocation(ServerState.Location);
+		Movement->SetColliderLocation(ServerState.Location);
 		Movement->SetLookAt(ServerState.LookAt);
 	}
-	UE_LOG(LogTemp, Warning, TEXT("On Rep server state!"));
+
 }
 
 void UOMovementReplicator::UpdateServerState(const FOMove& Move){

@@ -49,15 +49,22 @@ void UOMovement::SimulateMove(const FOMove& Move){
 
 
 void UOMovement::SetLocation(const FVector& NewLocation){
-
+	if(SkeletalMesh){
+		SkeletalMesh->SetWorldLocation(NewLocation);
+		AdjustMeshUp();
+	}
 }
 
 void UOMovement::SetColliderLocation(const FVector& NewLocation){
-
+	if(Collider){
+		Collider->SetWorldLocation(NewLocation);
+	}
 }
 
 void UOMovement::SetLookAt(const FRotator& NewLookAt){
-
+	if(SkeletalMesh){
+		SkeletalMesh->SetRelativeRotation(NewLookAt);
+	}
 }
 
 // PRIVATE
@@ -67,7 +74,7 @@ float UOMovement::AdjustMoveInput(const float Value) const{
 	if(FMath::Abs(Value) > 0.1f){
 		RetValue = -FMath::Sign(Value);
 	}
-	return RetValue;
+	return(RetValue);
 }
 
 FOMove UOMovement::CreateMove(const float DeltaTime) const{
@@ -76,7 +83,7 @@ FOMove UOMovement::CreateMove(const float DeltaTime) const{
 	NewMove.MoveInput = MoveInput;
 	NewMove.DeltaRotation = DeltaRotaion;
 	NewMove.Time = GetWorld()->TimeSeconds;
-	return NewMove;
+	return(NewMove);
 }
 
 void UOMovement::MoveAround(const FOMove& Move){
@@ -110,9 +117,22 @@ void UOMovement::MoveAround(const FOMove& Move){
 }
 	
 void UOMovement::LookAtRotation(const FOMove& Move){
+	if(!SkeletalMesh){
+		return;
+	}
 
+	if(FMath::Abs(Move.DeltaRotation) < KINDA_SMALL_NUMBER) { return; }
+
+	FQuat Qt(FVector(0, 0, 1), FMath::DegreesToRadians(Move.DeltaRotation));
+	SkeletalMesh->AddRelativeRotation(Qt);
 }
 	
 void UOMovement::AdjustMeshUp(){
+	if(!SkeletalMesh){ return; }
 
+	FVector Up = SkeletalMesh->GetUpVector();
+	FVector MeshLocation = SkeletalMesh->GetComponentLocation();
+	FVector AimUpVector = MeshLocation.GetSafeNormal();
+	FQuat RotQuat = FQuat::FindBetweenNormals(Up, AimUpVector);
+	SkeletalMesh->AddWorldRotation(RotQuat);
 }

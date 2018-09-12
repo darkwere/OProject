@@ -5,11 +5,11 @@
 #include "OMovement.generated.h"
 
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FOMove{
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector2D MoveInput;
 	UPROPERTY()
 	float DeltaRotation;
@@ -83,5 +83,6 @@ protected:
 
 	FVector2D MoveInput;
 	float DeltaRotation;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FOMove	LastMove;
 };

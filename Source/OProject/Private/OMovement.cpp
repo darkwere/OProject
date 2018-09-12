@@ -8,9 +8,9 @@ FColor GetRoleColor(ENetRole Role){
 		case ROLE_None:
 		return FColor::White;
 		case ROLE_SimulatedProxy:
-		return FColor::Yellow;
-		case ROLE_AutonomousProxy:
 		return FColor::Cyan;
+		case ROLE_AutonomousProxy:
+		return FColor::Yellow;
 		case ROLE_Authority:
 		return FColor::Green;
 		default: return FColor::Red;
@@ -36,8 +36,7 @@ void UOMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompo
 		UE_LOG(LogTemp, Error, TEXT("[ERROR] UOMovement -> Root Collider or Skeletal Mesh didn't initilize"));
 		return;
 	}
-	LastMove = CreateMove(DeltaTime);
-	SimulateMove(LastMove);
+	SimulateMove(CreateMove(DeltaTime));
 
 	// DEBUG PURPOSE
 	FColor RoleColor = GetRoleColor(GetOwnerRole());
@@ -51,11 +50,11 @@ void UOMovement::Init(USceneComponent* Collider, USceneComponent* SkeletalMesh){
 }
 
 void UOMovement::MoveForward(const float Value){
-	MoveInput.X = AdjustMoveInput(Value);
+	MoveInput.Y = AdjustMoveInput(Value);
 }
 	
 void UOMovement::MoveRight(const float Value){
-	MoveInput.Y = AdjustMoveInput(Value);
+	MoveInput.X = AdjustMoveInput(Value);
 }
 	
 void UOMovement::RotateDelta(const float DeltaRotation){
@@ -66,8 +65,8 @@ void UOMovement::SimulateMove(const FOMove& Move){
 	MoveAround(Move);
 	LookAtRotation(Move);
 	AdjustMeshUp();
+	LastMove = Move;
 }
-
 
 void UOMovement::SetLocation(const FVector& NewLocation){
 	if(SkeletalMesh){
@@ -138,7 +137,7 @@ void UOMovement::MoveAround(const FOMove& Move){
 
 	float Speed = PawnSpeed * Move.DeltaTime;
 
-	FVector RotateAround = MeshForward * Move.MoveInput.X + MeshRight * Move.MoveInput.Y;
+	FVector RotateAround =  MeshRight * Move.MoveInput.X + MeshForward * Move.MoveInput.Y;
 
 	if (RotateAround == FVector::ZeroVector) {
 		return;

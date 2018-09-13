@@ -85,4 +85,5 @@ protected:
 	float DeltaRotation;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FOMove	LastMove;
+
 };

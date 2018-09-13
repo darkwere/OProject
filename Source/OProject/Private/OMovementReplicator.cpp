@@ -26,21 +26,24 @@ void UOMovementReplicator::TickComponent(float DeltaTime, ELevelTick TickType, F
 	
 	if(!Movement){ return; }
 
-	ENetRole OwnerRole = GetOwnerRole();
-	ENetRole RemoteRole = GetOwner()->GetRemoteRole();
-
-	if(OwnerRole == ROLE_AutonomousProxy){
-		FOMove CurrentMove = Movement->GetLastMove();
-		Server_Move(CurrentMove);
+	switch(GetOwnerRole()){
+		case ROLE_Authority:{
+			if(GetOwner()->GetRemoteRole() == ROLE_SimulatedProxy){
+				FOMove CurrentMove = Movement->GetLastMove();
+				UpdateServerState(CurrentMove);
+			}
+		}break;
+		case ROLE_AutonomousProxy:{
+			FOMove CurrentMove = Movement->GetLastMove();
+			Server_Move(CurrentMove);
+			if(UnacknowledgeMoves.Num() > 250){ 
+				UE_LOG(LogTemp, Warning, TEXT("[ERROR] Too much unacknowledged moves. Skip current"));
+			}else{ UnacknowledgeMoves.Add(CurrentMove); }
+		}break;
+		case ROLE_SimulatedProxy:{
+			Client_Tick(DeltaTime);
+		}break;
 	}
-
-	if(OwnerRole == ROLE_Authority && RemoteRole == ROLE_SimulatedProxy){
-		FOMove CurrentMove = Movement->GetLastMove();
-		UpdateServerState(CurrentMove);
-	}
-
-	// TODO: Replicate to Simulated proxy?
-
 }
 
 void UOMovementReplicator::Server_Move_Implementation(const FOMove& Move){
@@ -51,14 +54,44 @@ void UOMovementReplicator::Server_Move_Implementation(const FOMove& Move){
 }
 
 bool UOMovementReplicator::Server_Move_Validate(const FOMove& Move){
-	return true;
+	return(true);
 }
 
 void UOMovementReplicator::OnRep_ServerState(){
-	if(Movement){
-		Movement->SetLocation(ServerState.Location);
-		Movement->SetColliderLocation(ServerState.Location);
-		Movement->SetLookAt(ServerState.LookAt);
+	if(!Movement){ return; }
+
+
+
+	ENetRole OwnerRole = GetOwnerRole();
+
+	switch(OwnerRole){
+
+		case ROLE_AutonomousProxy:{
+			
+			Movement->SetLocation(ServerState.Location);
+			Movement->SetColliderLocation(ServerState.Location);
+			Movement->SetLookAt(ServerState.LookAt);
+
+			ClearUnacknowledgeMoves(ServerState.LastMove.Time);
+
+			for(const FOMove& Move : UnacknowledgeMoves){
+				Movement->SimulateMove(Move);
+			}
+		}
+		break;
+
+		case ROLE_SimulatedProxy:{
+			Client_TimeBetweenUpdates = Client_TimeSinceUpdate;
+			Client_TimeSinceUpdate = 0;
+			Client_CurrentLocation = Movement->GetLocation();
+
+			Movement->SetLookAt(ServerState.LookAt);
+			Client_LastKnownServerLocation = ServerState.Location;
+
+			Movement->SetColliderLocation(Client_LastKnownServerLocation);
+		}
+
+		break;
 	}
 
 }
@@ -69,6 +102,30 @@ void UOMovementReplicator::UpdateServerState(const FOMove& Move){
 		ServerState.LookAt 		= Movement->GetLookAt();
 		ServerState.LastMove 	= Move;
 	}
+}
+
+void UOMovementReplicator::ClearUnacknowledgeMoves(const float Time){
+	int size = UnacknowledgeMoves.Num();
+	TArray<FOMove> NewMoves;
+	for(const FOMove& Move : UnacknowledgeMoves){
+		if(Move.Time > Time){
+			NewMoves.Add(Move);
+		}
+	}
+	UnacknowledgeMoves = NewMoves;
+}
+
+void UOMovementReplicator::Client_Tick(const float DeltaTime){
+	if(!Movement){ return; }
+
+	Client_TimeSinceUpdate += DeltaTime;
+	if( Client_TimeSinceUpdate < KINDA_SMALL_NUMBER ){ return; }
+
+	float LerpCoef = Client_TimeSinceUpdate / Client_TimeBetweenUpdates;
+	FVector Client_NewLocation = FMath::LerpStable(Client_CurrentLocation, Client_LastKnownServerLocation, LerpCoef).GetSafeNormal() * Client_LastKnownServerLocation.Size();
+
+	Movement->SetLocation(Client_NewLocation);
+	// TODO: Update LastMove for proper Animations
 }
 
 void UOMovementReplicator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {

@@ -30,6 +30,8 @@ private:
 	void OnRep_ServerState();
 
 	void UpdateServerState(const FOMove& Move);
+	void ClearUnacknowledgeMoves(const float Time);
+	void Client_Tick(const float DeltaTime);
 
 // FIELDS
 
@@ -39,5 +41,17 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_ServerState)
 	FOState ServerState;
+
+	// ROLE_AutonomousProxy related
+	TArray<FOMove> UnacknowledgeMoves;
+
+	// ROLE_SimulatedProxy Related
+	float Client_TimeBetweenUpdates;
+	float Client_TimeSinceUpdate;
+
+	FVector Client_CurrentLocation;
+	FVector Client_LastKnownServerLocation;
+
+
 
 };

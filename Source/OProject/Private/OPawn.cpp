@@ -11,11 +11,6 @@ AOPawn::AOPawn(){
 void AOPawn::BeginPlay(){
 	Super::BeginPlay();
 	Movement = Cast<UOMovement>(GetComponentByClass(UOMovement::StaticClass()));
-
-	if(HasAuthority()){
-		NetUpdateFrequency = 1;
-	}
-
 }
 
 void AOPawn::Tick(float DeltaTime){

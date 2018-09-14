@@ -11,8 +11,9 @@ bool AOPlayerController::InputTouch(uint32 Handle, ETouchType::Type Type, const 
         AOPawn* Pawn = Cast<AOPawn>(GetPawn());
         if(Pawn){
             Pawn->HandleTouch(Type, TouchLocation);
-            return true;
+            return(true);
         }        
     }
-    return false;
+    
+    return(false);
 }

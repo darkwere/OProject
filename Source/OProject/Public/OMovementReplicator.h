@@ -34,7 +34,11 @@ private:
 
 	void UpdateServerState(const FOMove& Move);
 	void ClearUnacknowledgeMoves(const float Time);
+
+	void Client_AutonomousProxy_Tick(const float DeltaTime);
 	void Client_SimulatedProxy_Tick(const float DeltaTime);
+	
+	void DrawDebugOwnerRole();
 
 // FIELDS
 
@@ -55,6 +59,10 @@ private:
 	FVector Client_CurrentLocation;
 	FVector Client_LastKnownServerLocation;
 
+	UPROPERTY(EditAnywhere)
+	bool bDrawDebugOwnerNetRole;
 
+	UPROPERTY(EditAnywhere)
+	float Server_NetUpdFrequency;
 
 };

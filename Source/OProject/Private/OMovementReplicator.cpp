@@ -2,9 +2,13 @@
 
 #include "Net/UnrealNetwork.h"
 
+#include "DrawDebugHelpers.h"
+
 UOMovementReplicator::UOMovementReplicator(){
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicated(true);
+
+	Server_NetUpdFrequency = 4.0f;
 }
 
 void UOMovementReplicator::BeginPlay(){
@@ -17,6 +21,12 @@ void UOMovementReplicator::BeginPlay(){
 
 	if(!Movement){
 		UE_LOG(LogTemp, Error, TEXT("[ERROR] Unable to find UOMovement Component for the owner! Replication won't work."));
+	}
+
+	if(Owner){
+		if(Owner->HasAuthority()){
+			Owner->NetUpdateFrequency = Server_NetUpdFrequency;
+		}
 	}
 
 }
@@ -34,16 +44,17 @@ void UOMovementReplicator::TickComponent(float DeltaTime, ELevelTick TickType, F
 			}
 		}break;
 		case ROLE_AutonomousProxy:{
-			FOMove CurrentMove = Movement->GetLastMove();
-			Server_Move(CurrentMove);
-			if(UnacknowledgeMoves.Num() > 250){ 
-				UE_LOG(LogTemp, Warning, TEXT("[ERROR] Too much unacknowledged moves. Skip current"));
-			}else{ UnacknowledgeMoves.Add(CurrentMove); }
+			Client_AutonomousProxy_Tick(DeltaTime);
 		}break;
 		case ROLE_SimulatedProxy:{
-			Client_Tick(DeltaTime);
+			Client_SimulatedProxy_Tick(DeltaTime);
 		}break;
 	}
+
+	if(bDrawDebugOwnerNetRole){
+		DrawDebugOwnerRole();
+	}
+
 }
 
 void UOMovementReplicator::Server_Move_Implementation(const FOMove& Move){
@@ -54,7 +65,7 @@ void UOMovementReplicator::Server_Move_Implementation(const FOMove& Move){
 }
 
 bool UOMovementReplicator::Server_Move_Validate(const FOMove& Move){
-	return(true);
+	return( !(FMath::Abs(Move.MoveInput.X) > 1) && !(FMath::Abs(Move.MoveInput.Y) > 1) );
 }
 
 void UOMovementReplicator::OnRep_ServerState(){
@@ -66,7 +77,26 @@ void UOMovementReplicator::OnRep_ServerState(){
 	}
 }
 
+void UOMovementReplicator::Client_AutonomousProxy_Tick(const float DeltaTime){
+	FOMove CurrentMove = Movement->GetLastMove();
+	Server_Move(CurrentMove);
+	if(UnacknowledgeMoves.Num() > 250){
+		UE_LOG(LogTemp, Warning, TEXT("[ERROR] Too much unacknowledged moves. Skip current"));
+	}else{ 
+		UnacknowledgeMoves.Add(CurrentMove); 
+	}
+
+	if(Client_LastKnownServerLocation != FVector::ZeroVector){
+		FVector NewLocation = FMath::LerpStable(Movement->GetLocation(), Client_LastKnownServerLocation, DeltaTime);
+		Movement->SetLocation(NewLocation);
+	}
+
+}
+
 void UOMovementReplicator::OnRep_ServerState_AutonomousProxy(){
+
+	FVector Client_LocalLocation = Movement->GetLocation();
+
 	Movement->SetLocation(ServerState.Location);
 	Movement->SetColliderLocation(ServerState.Location);
 	Movement->SetLookAt(ServerState.LookAt);
@@ -78,6 +108,7 @@ void UOMovementReplicator::OnRep_ServerState_AutonomousProxy(){
 	}
 
 	Client_LastKnownServerLocation = Movement->GetLocation();
+	Movement->SetLocation(Client_LocalLocation);
 }
 
 void UOMovementReplicator::OnRep_ServerState_SimulatedProxy(){
@@ -120,6 +151,16 @@ void UOMovementReplicator::Client_SimulatedProxy_Tick(const float DeltaTime){
 
 	Movement->SetLocation(Client_NewLocation);
 	Movement->SetServerStateLastMove(ServerState.LastMove);
+}
+
+void UOMovementReplicator::DrawDebugOwnerRole(){
+	FColor RoleColor = FColor::White;
+	switch(GetOwnerRole()){
+		case ROLE_SimulatedProxy:	RoleColor = FColor::Red; 	break;
+		case ROLE_AutonomousProxy:	RoleColor = FColor::Blue;	break;
+		case ROLE_Authority:		RoleColor = FColor::Green;	break;
+	}
+	DrawDebugSphere(GetWorld(), Movement->GetLocation() * 1.2, 5, 16, RoleColor);
 }
 
 void UOMovementReplicator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {

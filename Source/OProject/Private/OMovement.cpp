@@ -1,24 +1,5 @@
 #include "OMovement.h"
 
-#include "DrawDebugHelpers.h"
-
-// DEBUG PURPOSE
-FColor GetRoleColor(ENetRole Role){
-	switch(Role){
-		case ROLE_None:
-		return FColor::White;
-		case ROLE_SimulatedProxy:
-		return FColor::Cyan;
-		case ROLE_AutonomousProxy:
-		return FColor::Yellow;
-		case ROLE_Authority:
-		return FColor::Green;
-		default: return FColor::Red;
-	}
-}
-
-
-
 UOMovement::UOMovement(){	
 	PrimaryComponentTick.bCanEverTick = true;
 	PawnSpeed = 0.25f;
@@ -36,28 +17,8 @@ void UOMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompo
 		UE_LOG(LogTemp, Error, TEXT("[ERROR] UOMovement -> Root Collider or Skeletal Mesh didn't initilize"));
 		return;
 	}
-
-	ENetRole OwnerRole = GetOwnerRole();
-
-	switch(OwnerRole){
-		case ROLE_Authority:{
-			if(GetOwner()->GetRemoteRole() == ROLE_SimulatedProxy){
-				LastMove = CreateMove(DeltaTime);
-				SimulateMove(LastMove);
-			}
-		}
-		break;
-		case ROLE_AutonomousProxy:{
-			LastMove = CreateMove(DeltaTime);
-			SimulateMove(LastMove);
-		}
-		break;
-	}
-
-	// DEBUG PURPOSE
-	FColor RoleColor = GetRoleColor(GetOwnerRole());
-	DrawDebugSphere(GetWorld(), SkeletalMesh->GetComponentLocation() * 1.2, 5, 16, RoleColor);
-
+	LastMove = CreateMove(DeltaTime);
+	SimulateMove(LastMove);
 }
 
 void UOMovement::Init(USceneComponent* Collider, USceneComponent* SkeletalMesh){

@@ -57,6 +57,9 @@ public:
 	FVector	GetLocation() const;
 	FRotator GetLookAt() const;
 
+	// SimulatedProxy Replicated Related
+	void SetServerStateLastMove(FOMove Move);
+
 protected:
 
 	virtual void BeginPlay() override;

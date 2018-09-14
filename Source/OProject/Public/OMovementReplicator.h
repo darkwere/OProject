@@ -29,9 +29,12 @@ private:
 	UFUNCTION()
 	void OnRep_ServerState();
 
+	void OnRep_ServerState_AutonomousProxy();
+	void OnRep_ServerState_SimulatedProxy();
+
 	void UpdateServerState(const FOMove& Move);
 	void ClearUnacknowledgeMoves(const float Time);
-	void Client_Tick(const float DeltaTime);
+	void Client_SimulatedProxy_Tick(const float DeltaTime);
 
 // FIELDS
 

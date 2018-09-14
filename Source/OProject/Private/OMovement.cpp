@@ -36,7 +36,23 @@ void UOMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompo
 		UE_LOG(LogTemp, Error, TEXT("[ERROR] UOMovement -> Root Collider or Skeletal Mesh didn't initilize"));
 		return;
 	}
-	SimulateMove(CreateMove(DeltaTime));
+
+	ENetRole OwnerRole = GetOwnerRole();
+
+	switch(OwnerRole){
+		case ROLE_Authority:{
+			if(GetOwner()->GetRemoteRole() == ROLE_SimulatedProxy){
+				LastMove = CreateMove(DeltaTime);
+				SimulateMove(LastMove);
+			}
+		}
+		break;
+		case ROLE_AutonomousProxy:{
+			LastMove = CreateMove(DeltaTime);
+			SimulateMove(LastMove);
+		}
+		break;
+	}
 
 	// DEBUG PURPOSE
 	FColor RoleColor = GetRoleColor(GetOwnerRole());
@@ -77,7 +93,8 @@ void UOMovement::SetLocation(const FVector& NewLocation){
 
 void UOMovement::SetColliderLocation(const FVector& NewLocation){
 	if(Collider){
-		Collider->SetWorldLocation(NewLocation);
+		FVector LocationDelta = SkeletalMesh->GetUpVector().GetSafeNormal() * 30;
+		Collider->SetWorldLocation(NewLocation + LocationDelta);
 	}
 }
 
@@ -103,6 +120,12 @@ FRotator UOMovement::GetLookAt() const {
 		return(SkeletalMesh->GetRelativeTransform().Rotator());
 	}
 	return(FRotator::ZeroRotator);
+}
+
+void UOMovement::SetServerStateLastMove(FOMove Move){
+	if(GetOwnerRole() == ROLE_SimulatedProxy){
+		LastMove = Move;
+	}
 }
 
 // PRIVATE
@@ -135,6 +158,8 @@ void UOMovement::MoveAround(const FOMove& Move){
 	FVector Location = SkeletalMesh->GetComponentLocation();
 
 
+	FVector LocationDelta = SkeletalMesh->GetUpVector().GetSafeNormal() * 30;
+
 	float Speed = PawnSpeed * Move.DeltaTime;
 
 	FVector RotateAround =  MeshRight * Move.MoveInput.X + MeshForward * Move.MoveInput.Y;
@@ -146,7 +171,7 @@ void UOMovement::MoveAround(const FOMove& Move){
 	FQuat Quaternion(RotateAround, FMath::DegreesToRadians(PawnSpeed));
 	Location = Quaternion.RotateVector(Location);
 	FHitResult Hit;
-	Collider->SetWorldLocation(Location, true, &Hit);
+	Collider->SetWorldLocation(Location + LocationDelta, true, &Hit);
 	if (Hit.IsValidBlockingHit()) {
 		RotateAround = FVector::ZeroVector;
 	}else {

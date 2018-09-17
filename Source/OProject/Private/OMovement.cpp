@@ -1,5 +1,7 @@
 #include "OMovement.h"
 
+#include "Runtime/Engine/Classes/GameFramework/GameStateBase.h"
+
 UOMovement::UOMovement(){	
 	PrimaryComponentTick.bCanEverTick = true;
 	PawnSpeed = 0.25f;
@@ -104,7 +106,14 @@ FOMove UOMovement::CreateMove(const float DeltaTime) const{
 	NewMove.DeltaTime = DeltaTime;
 	NewMove.MoveInput = MoveInput;
 	NewMove.DeltaRotation = DeltaRotation;
-	NewMove.Time = GetWorld()->TimeSeconds;
+
+	AGameStateBase* GSB = GetWorld()->GetGameState();
+	if(GSB){ 	
+		NewMove.Time = GSB->GetServerWorldTimeSeconds();
+	}else{  	
+		NewMove.Time = GetWorld()->TimeSeconds; 
+	}
+
 	return(NewMove);
 }
 
